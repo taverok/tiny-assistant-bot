@@ -2,7 +2,7 @@ package tg
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/taverok/tinyAssistant/app/assistant/config"
+	"github.com/taverok/tinyAssistant/internal/app/assistbot/config"
 	"log"
 )
 
