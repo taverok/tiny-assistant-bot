@@ -19,10 +19,18 @@ func (it *AlarmService) CreateAlarm(a *domain.Alarm) error {
 	a.Id = uuid.New().String()
 
 	_, err := it.DB.Exec(
-		"INSERT INTO alarm(id, say, is_active, user_id, chat_id, `minute`, `hour`, day_month, `month`, day_week) "+
-			"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		a.Id, a.Say, a.IsActive, a.UserId, a.ChatId, a.Minute, a.Hour, a.DayMonth, a.Month, a.DayWeek,
+		"INSERT INTO alarm(id, say, is_active, user_id, chat_id, cron, counter, scheduled_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		a.Id, a.Say, a.IsActive, a.UserId, a.ChatId, a.Cron, a.Counter, a.ScheduledAt, a.CreatedAt,
 	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (it *AlarmService) UpdateAlarm(a *domain.Alarm) error {
+	_, err := it.DB.Exec("UPDATE alarm SET say=?, is_active=?, cron=?, scheduled_at=?", a.Say, a.IsActive, a.Cron, a.ScheduledAt)
 	if err != nil {
 		return err
 	}
@@ -33,9 +41,10 @@ func (it *AlarmService) CreateAlarm(a *domain.Alarm) error {
 func (it *AlarmService) RunScheduler() {
 	s := gocron.NewScheduler(time.UTC)
 	_, err := s.Every(1).Minute().Do(func() {
-		log.Printf("alarm scheduler started")
-		for _, a := range it.getScheduled() {
-			it.runAlarm(a)
+		now := time.Now().UTC()
+		log.Printf("alarm scheduler started < %d", now.Unix())
+		for _, a := range it.getScheduled(now) {
+			it.runAlarm(a, now)
 		}
 	})
 
@@ -47,18 +56,24 @@ func (it *AlarmService) RunScheduler() {
 	s.StartAsync()
 }
 
-func (it *AlarmService) runAlarm(a domain.Alarm) {
+func (it *AlarmService) runAlarm(a domain.Alarm, now time.Time) {
 	it.TgBot.Send(tg.TgResponse{
 		ChatId: a.ChatId,
 		Text:   a.Say,
 	})
+
+	a.ScheduleNext(now)
+	a.Counter++
+
+	err := it.UpdateAlarm(&a)
+	if err != nil {
+		log.Println("Error " + err.Error())
+	}
 }
 
-func (it *AlarmService) getScheduled() []domain.Alarm {
-	now := time.Now()
-
+func (it *AlarmService) getScheduled(now time.Time) []domain.Alarm {
 	var aa []domain.Alarm
-	err := it.DB.Select(&aa, "SELECT * FROM alarm WHERE minute in ('*', ?)", now.Minute())
+	err := it.DB.Select(&aa, "SELECT * FROM alarm WHERE scheduled_at <= ?", now.Unix())
 	if err != nil {
 		log.Println(err)
 		return nil

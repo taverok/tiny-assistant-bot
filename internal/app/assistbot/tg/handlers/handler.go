@@ -33,7 +33,7 @@ func (it *Handler) createAlarm(alarm *domain.Alarm) string {
 		return ""
 	}
 
-	return fmt.Sprintf("new alarm created: %+v", alarm)
+	return alarm.String()
 }
 
 func (it *Handler) updateAlarm(alarm *domain.Alarm) string {

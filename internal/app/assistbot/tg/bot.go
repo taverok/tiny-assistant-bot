@@ -8,12 +8,13 @@ import (
 
 type Bot struct {
 	Config config.Config
-	bot    *tgbotapi.BotAPI
+	botApi *tgbotapi.BotAPI
 }
 
 func (it *Bot) Send(r TgResponse) {
-	bot := it.GetBot()
+	bot := it.GetBotApi()
 	msg := tgbotapi.NewMessage(r.ChatId, r.Text)
+	msg.DisableWebPagePreview = true
 
 	if r.ReplyMessageId != 0 {
 		msg.ReplyToMessageID = r.ReplyMessageId
@@ -25,9 +26,9 @@ func (it *Bot) Send(r TgResponse) {
 	}
 }
 
-func (it *Bot) GetBot() *tgbotapi.BotAPI {
-	if it.bot != nil {
-		return it.bot
+func (it *Bot) GetBotApi() *tgbotapi.BotAPI {
+	if it.botApi != nil {
+		return it.botApi
 	}
 
 	bot, err := tgbotapi.NewBotAPI(it.Config.TgKey)

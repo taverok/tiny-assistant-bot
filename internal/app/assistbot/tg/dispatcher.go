@@ -19,7 +19,7 @@ func NewDispatcher(bot Bot) Dispatcher {
 }
 
 func (it *Dispatcher) ListenAndRoute() {
-	bot := it.GetBot()
+	bot := it.GetBotApi()
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
