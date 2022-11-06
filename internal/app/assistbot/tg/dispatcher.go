@@ -3,17 +3,44 @@ package tg
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/taverok/tinyAssistant/internal/app/assistbot/tg/domain"
 	"log"
 )
 
 type Dispatcher struct {
+	Bot
 	handlersMap map[string]func(Request) string
 }
 
-func NewDispatcher() Dispatcher {
+func NewDispatcher(bot Bot) Dispatcher {
 	return Dispatcher{
+		Bot:         bot,
 		handlersMap: map[string]func(Request) string{},
+	}
+}
+
+func (it *Dispatcher) ListenAndRoute() {
+	bot := it.GetBot()
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates := bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		if update.Message == nil {
+			continue
+		}
+
+		request := NewRequest(update.Message.Chat.ID, update.Message.From.ID, update.Message.Text)
+		request.ReplyMessageId = update.Message.MessageID
+		response := it.Dispatch(request)
+
+		if response.Text == "" {
+			continue
+		}
+
+		it.Send(response)
 	}
 }
 
@@ -21,18 +48,16 @@ func (it *Dispatcher) RegisterHandler(command string, action func(Request) strin
 	it.handlersMap[command] = action
 }
 
-func (it *Dispatcher) Dispatch(m tgbotapi.Message) domain.TgResponse {
-	request := NewRequest(m.Chat.ID, m.From.ID, m.Text)
+func (it *Dispatcher) Dispatch(r Request) TgResponse {
+	log.Printf("requset %+v", r)
 
-	log.Printf("raw message %+v", m)
-	log.Printf("requset %+v", request)
+	var handler = it.getHandler(r)
+	response := handler(r)
 
-	var handler = it.getHandler(request)
-	response := handler(request)
-
-	return domain.TgResponse{
-		ChatId: request.TgChatId,
-		Text:   response,
+	return TgResponse{
+		ChatId:         r.TgChatId,
+		Text:           response,
+		ReplyMessageId: r.ReplyMessageId,
 	}
 }
 

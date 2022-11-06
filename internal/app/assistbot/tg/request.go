@@ -5,10 +5,11 @@ import (
 )
 
 type Request struct {
-	Command  string
-	Fields   map[string]string
-	TgChatId int64
-	TgUserId int64
+	Command        string
+	Fields         map[string]string
+	TgChatId       int64
+	TgUserId       int64
+	ReplyMessageId int
 }
 
 func NewRequest(chatId int64, userId int64, message string) Request {
