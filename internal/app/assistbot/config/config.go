@@ -9,13 +9,16 @@ type Config struct {
 
 func NewConfig() Config {
 	config := Config{}
-	config.TgKey = os.Getenv("TINY_ASSISTANT_TG_KEY")
-
-	dbPath, ok := os.LookupEnv("TINY_ASSISTANT_DB_PATH")
-	if !ok {
-		dbPath = "db.sql"
-	}
-	config.DbPath = dbPath
+	config.TgKey = getEnv("TINY_ASSISTANT_TG_KEY", "")
+	config.DbPath = getEnv("TINY_ASSISTANT_DB_PATH", "db.sqlite")
 
 	return config
+}
+
+func getEnv(key string, def string) string {
+	v, ok := os.LookupEnv(key)
+	if ok {
+		return v
+	}
+	return def
 }
