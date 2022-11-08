@@ -30,11 +30,14 @@ func (it *AlarmService) CreateAlarm(a *domain.Alarm) error {
 }
 
 func (it *AlarmService) UpdateAlarm(a *domain.Alarm) error {
-	_, err := it.DB.Exec("UPDATE alarm SET say=?, is_active=?, cron=?, scheduled_at=?", a.Say, a.IsActive, a.Cron, a.ScheduledAt)
+	_, err := it.DB.Exec(
+		"UPDATE alarm SET say=?, is_active=?, cron=?, scheduled_at=? WHERE id=?",
+		a.Say, a.IsActive, a.Cron, a.ScheduledAt, a.Id)
 	if err != nil {
 		return err
 	}
 
+	log.Printf("updating alarm id: %s", a.Id)
 	return nil
 }
 
@@ -73,7 +76,7 @@ func (it *AlarmService) runAlarm(a domain.Alarm, now time.Time) {
 
 func (it *AlarmService) getScheduled(now time.Time) []domain.Alarm {
 	var aa []domain.Alarm
-	err := it.DB.Select(&aa, "SELECT * FROM alarm WHERE scheduled_at <= ?", now.Unix())
+	err := it.DB.Select(&aa, "SELECT * FROM alarm WHERE scheduled_at <= ? AND is_active=1", now.Unix())
 	if err != nil {
 		log.Println(err)
 		return nil

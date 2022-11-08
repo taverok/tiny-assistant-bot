@@ -10,7 +10,13 @@ push:
 	docker push taverok/tinas:latest
 
 restart:
-	ssh $(HOST) "docker compose -f /opt/services/tinas/docker-compose.yml up -d --no-deps --build --remove-orphans"
+	ssh $(HOST) " cd /opt/services/tinas/ && \
+				docker compose down && \
+				docker compose rm -f && docker compose pull && \
+				docker compose up -d --no-deps --build --force-recreate"
 
-copy_db:
+push_db:
 	scp ./db.sqlite $(HOST):/opt/services/tinas/db
+
+pull_db:
+	scp  $(HOST):/opt/services/tinas/db/db.sqlite ./db.sqlite
